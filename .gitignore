@@ -221,3 +221,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- CS24200 project 3 ---
+# Dataset files and derived artifacts stay out of git; .gitkeep keeps the folders.
+data/**/*
+!data/**/.gitkeep
+data/*
+!data/.gitkeep
+
+# LaTeX build output (keep report.tex and report.pdf)
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz
+report/*.bbl
+report/*.blg
