@@ -93,6 +93,15 @@ def answer_3c(matrix: DataFrame, movies: DataFrame) -> None:
     plot_3c(scores, genres, model.explained_variance_ratio_)
 
 
+def check_pc1_popularity(matrix: DataFrame) -> None:
+    scores, _ = pca_items(center_items(matrix))
+    n_raters: Series = (matrix > 0).sum(axis=0).loc[scores.index]
+
+    print("rank correlation of each component with number of raters per movie")
+    for column in scores.columns:
+        print(column, float(scores[column].rank().corr(n_raters.rank())))
+
+
 if __name__ == "__main__":
     matrix: DataFrame = build_matrix(load_ratings())
     movies: DataFrame = load_movies()
@@ -106,4 +115,8 @@ if __name__ == "__main__":
     print()
 
     answer_3c(matrix, movies)
+
+    print()
+
+    check_pc1_popularity(matrix)
 
