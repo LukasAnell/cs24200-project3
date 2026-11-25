@@ -88,6 +88,25 @@ def answer_4b(matrix: DataFrame) -> None:
     print("total sum of squares about the column means:", total_ss)
 
 
+def svd_users(matrix: DataFrame) -> tuple[DataFrame, TruncatedSVD]:
+    model: TruncatedSVD = svd_fit(matrix, 2)
+    embedding: DataFrame = DataFrame(
+        model.transform(matrix.to_numpy()),
+        index=matrix.index,
+        columns=["svd1", "svd2"],
+    )
+
+    return embedding, model
+
+
+def answer_4c(matrix: DataFrame) -> None:
+    embedding, model = svd_users(matrix)
+
+    print("4(c) SVD with 2 components, users transformed")
+    print("embedding shape:", embedding.shape)
+    print("explained variance ratio sum:", float(model.explained_variance_ratio_.sum()))
+
+
 if __name__ == "__main__":
     matrix: DataFrame = build_matrix(load_ratings())
 
@@ -96,3 +115,7 @@ if __name__ == "__main__":
     print()
 
     answer_4b(matrix)
+
+    print()
+
+    answer_4c(matrix)
