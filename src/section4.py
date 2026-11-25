@@ -1,11 +1,12 @@
 from numpy import ndarray
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from plotnine import (
         aes,
         geom_line,
         geom_point,
         ggplot,
         labs,
+        scale_color_brewer,
         scale_y_log10,
         theme,
         theme_minimal,
@@ -13,7 +14,7 @@ from plotnine import (
 from sklearn.decomposition import TruncatedSVD
 
 from process import build_matrix, load_ratings
-from section2 import K_VALUES, RANDOM_STATE, inertia_sweep
+from section2 import CHOSEN_K, K_VALUES, RANDOM_STATE, cluster_labels, inertia_sweep
 
 SVD_K: int = 128
 
@@ -91,10 +92,10 @@ def answer_4b(matrix: DataFrame) -> None:
 def svd_users(matrix: DataFrame) -> tuple[DataFrame, TruncatedSVD]:
     model: TruncatedSVD = svd_fit(matrix, 2)
     embedding: DataFrame = DataFrame(
-        model.transform(matrix.to_numpy()),
-        index=matrix.index,
-        columns=["svd1", "svd2"],
-    )
+            model.transform(matrix.to_numpy()),
+            index=matrix.index,
+            columns=["svd1", "svd2"],
+            )
 
     return embedding, model
 
@@ -105,6 +106,34 @@ def answer_4c(matrix: DataFrame) -> None:
     print("4(c) SVD with 2 components, users transformed")
     print("embedding shape:", embedding.shape)
     print("explained variance ratio sum:", float(model.explained_variance_ratio_.sum()))
+
+
+def plot_4d(embedding: DataFrame, labels: Series, ratios: ndarray) -> None:
+    data: DataFrame = embedding.join(labels.astype(str))
+    plot: ggplot = (
+            ggplot(data, aes(x="svd1", y="svd2", color="cluster"))
+            + geom_point(alpha=0.7, size=2)
+            + scale_color_brewer(type="qual", palette="Set1")
+            + labs(
+                title=f"Users projected onto the first two SVD components (k-means, k={CHOSEN_K})",
+                x=f"SVD component 1 ({ratios[0]:.1%} of variance)",
+                y=f"SVD component 2 ({ratios[1]:.1%} of variance)",
+                color="Cluster",
+                )
+            + theme_minimal()
+            + theme(figure_size=(8, 6))
+            )
+    plot.save("figures/svd_users_by_cluster.png", verbose=False)
+
+
+def answer_4d(matrix: DataFrame) -> None:
+    embedding, model = svd_users(matrix)
+    labels: Series = cluster_labels(matrix, CHOSEN_K)
+
+    print(f"4(d) users by k-means cluster (k={CHOSEN_K}), cluster sizes:")
+    print(labels.value_counts().sort_index().to_string())
+
+    plot_4d(embedding, labels, model.explained_variance_ratio_)
 
 
 if __name__ == "__main__":
@@ -119,3 +148,7 @@ if __name__ == "__main__":
     print()
 
     answer_4c(matrix)
+
+    print()
+
+    answer_4d(matrix)
