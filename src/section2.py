@@ -16,7 +16,7 @@ from process import build_matrix, load_movies, load_ratings
 RANDOM_STATE: int = 1
 N_INIT: int = 10
 K_VALUES: list[int] = [2, 4, 8, 16, 32, 64, 128]
-K_EXPLORE: int = 8
+CHOSEN_K: int = 4
 MIN_RATER_PERCENT: int = 10
 
 
@@ -118,4 +118,4 @@ if __name__ == "__main__":
 
     plot_2a(sweep)
 
-    answer_2c(matrix, movies, K_EXPLORE)
+    answer_2c(matrix, movies, CHOSEN_K)
