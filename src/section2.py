@@ -93,8 +93,17 @@ def cluster_top_items(
     return concat(tables, ignore_index=True)
 
 
+def cluster_summary(matrix: DataFrame, labels: Series) -> DataFrame:
+    n_ratings: Series = (matrix > 0).sum(axis=1)
+
+    return n_ratings.groupby(labels).agg(["size", "min", "median", "max"])
+
+
 def answer_2c(matrix: DataFrame, movies: DataFrame, k: int) -> None:
     labels: Series = cluster_labels(matrix, k)
+
+    print(f"cluster sizes and ratings per user at k={k}")
+    print(cluster_summary(matrix, labels).to_string())
 
     print(f"2(c) top items per cluster at k={k}")
     print(cluster_top_items(matrix, movies, labels).round(2).to_string(index=False))
