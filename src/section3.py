@@ -1,4 +1,4 @@
-from numpy import ndarray
+from numpy import cumsum, ndarray, searchsorted
 from pandas import CategoricalDtype, DataFrame, Index, Series
 from plotnine import (
         aes,
@@ -17,6 +17,7 @@ from process import build_matrix, load_movies, load_ratings
 
 TOP_GENRES: int = 8
 OTHER: str = "Other"
+VARIANCE_TARGETS: list[float] = [0.80, 0.40]
 
 
 def center_items(matrix: DataFrame) -> DataFrame:
@@ -93,6 +94,23 @@ def answer_3c(matrix: DataFrame, movies: DataFrame) -> None:
     plot_3c(scores, genres, model.explained_variance_ratio_)
 
 
+def intrinsic_dim(centered: DataFrame) -> ndarray:
+    model: PCA = PCA(n_components=None, svd_solver="full").fit(centered.to_numpy())
+
+    return cumsum(model.explained_variance_ratio_)
+
+
+def answer_3d(matrix: DataFrame) -> None:
+    cumulative: ndarray = intrinsic_dim(center_items(matrix))
+
+    print("3(d) components needed to reach a share of the variance")
+    print("components fitted:", len(cumulative))
+    for target in VARIANCE_TARGETS:
+        count: int = int(searchsorted(cumulative, target) + 1)
+        print(f"{target:.0%}: {count} components (cumulative {cumulative[count - 1]:.4f})")
+    print("2 components cumulative:", float(cumulative[1]))
+
+
 def check_pc1_popularity(matrix: DataFrame) -> None:
     scores, _ = pca_items(center_items(matrix))
     n_raters: Series = (matrix > 0).sum(axis=0).loc[scores.index]
@@ -119,4 +137,8 @@ if __name__ == "__main__":
     print()
 
     check_pc1_popularity(matrix)
+
+    print()
+
+    answer_3d(matrix)
 
