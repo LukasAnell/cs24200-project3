@@ -1,4 +1,4 @@
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, concat
 from plotnine import (
         aes,
         geom_line,
@@ -11,12 +11,13 @@ from plotnine import (
         )
 from sklearn.cluster import KMeans
 
-from process import build_matrix, load_ratings
+from process import build_matrix, load_movies, load_ratings
 
 RANDOM_STATE: int = 1
 N_INIT: int = 10
 K_VALUES: list[int] = [2, 4, 8, 16, 32, 64, 128]
 K_EXPLORE: int = 8
+MIN_RATER_PERCENT: int = 10
 
 
 def inertia_sweep(matrix: DataFrame) -> DataFrame:
@@ -59,14 +60,53 @@ def cluster_labels(matrix: DataFrame, k: int) -> Series:
     return Series(model.labels_, index=matrix.index, name="cluster")
 
 
+def cluster_top_items(
+        matrix: DataFrame, movies: DataFrame, labels: Series, n: int = 3
+        ) -> DataFrame:
+    titles: Series = movies.set_index("movieId")["title"]
+    tables: list[DataFrame] = []
+
+    for cluster in sorted(labels.unique()):
+        block: DataFrame = matrix.loc[labels == cluster]
+        counts: Series = (block > 0).sum(axis=0)
+        means: Series = block.where(block > 0).mean(axis=0)
+
+        candidates: DataFrame = DataFrame({"n_raters": counts, "mean_rating": means})
+        enough: Series = counts * 100 >= MIN_RATER_PERCENT * len(block)
+        top: DataFrame = (
+                candidates[enough]
+                .reset_index()
+                .sort_values(
+                    ["mean_rating", "n_raters", "movieId"],
+                    ascending=[False, False, True],
+                    )
+                .head(n)
+                )
+
+        top.insert(0, "cluster_size", len(block))
+        top.insert(0, "cluster", cluster)
+
+        top["title"] = top["movieId"].map(titles)
+        
+        tables.append(top)
+
+    return concat(tables, ignore_index=True)
+
+
+def answer_2c(matrix: DataFrame, movies: DataFrame, k: int) -> None:
+    labels: Series = cluster_labels(matrix, k)
+
+    print(f"2(c) top items per cluster at k={k}")
+    print(cluster_top_items(matrix, movies, labels).round(2).to_string(index=False))
+
+
 if __name__ == "__main__":
     matrix: DataFrame = build_matrix(load_ratings())
+    movies: DataFrame = load_movies()
 
     sweep: DataFrame = inertia_sweep(matrix)
     print(sweep.to_string(index=False))
 
     plot_2a(sweep)
 
-    labels: Series = cluster_labels(matrix, K_EXPLORE)
-    print(f"cluster sizes at k={K_EXPLORE}:")
-    print(labels.value_counts().sort_index().to_string())
+    answer_2c(matrix, movies, K_EXPLORE)
