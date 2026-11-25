@@ -136,6 +136,15 @@ def answer_4d(matrix: DataFrame) -> None:
     plot_4d(embedding, labels, model.explained_variance_ratio_)
 
 
+def check_svd_activity(matrix: DataFrame) -> None:
+    embedding, _ = svd_users(matrix)
+    n_rated: Series = (matrix > 0).sum(axis=1)
+
+    print("rank correlation of each SVD component with movies rated per user")
+    for column in embedding.columns:
+        print(column, float(embedding[column].rank().corr(n_rated.rank())))
+
+
 if __name__ == "__main__":
     matrix: DataFrame = build_matrix(load_ratings())
 
@@ -152,3 +161,7 @@ if __name__ == "__main__":
     print()
 
     answer_4d(matrix)
+
+    print()
+
+    check_svd_activity(matrix)
