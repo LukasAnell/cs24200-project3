@@ -1,4 +1,4 @@
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from plotnine import (
         aes,
         geom_line,
@@ -16,6 +16,7 @@ from process import build_matrix, load_ratings
 RANDOM_STATE: int = 1
 N_INIT: int = 10
 K_VALUES: list[int] = [2, 4, 8, 16, 32, 64, 128]
+K_EXPLORE: int = 8
 
 
 def inertia_sweep(matrix: DataFrame) -> DataFrame:
@@ -50,6 +51,14 @@ def plot_2a(sweep: DataFrame) -> None:
     plot.save("figures/inertia_vs_k.png", verbose=False)
 
 
+def cluster_labels(matrix: DataFrame, k: int) -> Series:
+    model: KMeans = KMeans(
+            n_clusters=k, n_init=N_INIT, random_state=RANDOM_STATE
+            ).fit(matrix.to_numpy())
+
+    return Series(model.labels_, index=matrix.index, name="cluster")
+
+
 if __name__ == "__main__":
     matrix: DataFrame = build_matrix(load_ratings())
 
@@ -57,3 +66,7 @@ if __name__ == "__main__":
     print(sweep.to_string(index=False))
 
     plot_2a(sweep)
+
+    labels: Series = cluster_labels(matrix, K_EXPLORE)
+    print(f"cluster sizes at k={K_EXPLORE}:")
+    print(labels.value_counts().sort_index().to_string())
