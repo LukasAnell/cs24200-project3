@@ -1,7 +1,10 @@
-from pandas import DataFrame
+from pandas import CategoricalDtype, DataFrame, Index, Series
 from sklearn.decomposition import PCA
 
-from process import build_matrix, load_ratings
+from process import build_matrix, load_movies, load_ratings
+
+TOP_GENRES: int = 8
+OTHER: str = "Other"
 
 
 def center_items(matrix: DataFrame) -> DataFrame:
@@ -38,12 +41,36 @@ def answer_3b(matrix: DataFrame) -> None:
     print("total explained by 2 components:", float(model.explained_variance_ratio_.sum()))
 
 
+def genre_groups(movies: DataFrame, movie_ids: Index) -> Series:
+    first: Series = (
+            movies.set_index("movieId")["genres"].str.split("|").str[0].loc[movie_ids]
+            )
+
+    top: list[str] = list(first.value_counts().head(TOP_GENRES).index)
+    grouped: Series = first.where(first.isin(top), OTHER)
+
+    return grouped.astype(CategoricalDtype(top + [OTHER], ordered=True)).rename("genre")
+
+
+def answer_3c(matrix: DataFrame, movies: DataFrame) -> None:
+    scores, model = pca_items(center_items(matrix))
+    genres: Series = genre_groups(movies, scores.index)
+
+    print("3(c) first-genre groups of the plotted movies")
+    print(genres.value_counts(sort=False).to_string())
+
+
 if __name__ == "__main__":
     matrix: DataFrame = build_matrix(load_ratings())
+    movies: DataFrame = load_movies()
 
     answer_3a(matrix)
 
     print()
 
     answer_3b(matrix)
+
+    print()
+
+    answer_3c(matrix, movies)
 
