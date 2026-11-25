@@ -1,4 +1,16 @@
+from numpy import ndarray
 from pandas import CategoricalDtype, DataFrame, Index, Series
+from plotnine import (
+        aes,
+        geom_point,
+        ggplot,
+        guide_legend,
+        guides,
+        labs,
+        scale_color_brewer,
+        theme,
+        theme_minimal,
+        )
 from sklearn.decomposition import PCA
 
 from process import build_matrix, load_movies, load_ratings
@@ -52,12 +64,33 @@ def genre_groups(movies: DataFrame, movie_ids: Index) -> Series:
     return grouped.astype(CategoricalDtype(top + [OTHER], ordered=True)).rename("genre")
 
 
+def plot_3c(scores: DataFrame, genres: Series, ratios: ndarray) -> None:
+    data: DataFrame = scores.join(genres)
+    plot: ggplot = (
+            ggplot(data, aes(x="pc1", y="pc2", color="genre"))
+            + geom_point(alpha=0.4, size=1)
+            + scale_color_brewer(type="qual", palette="Set1")
+            + guides(color=guide_legend(override_aes={"alpha": 1, "size": 3}))
+            + labs(
+                title="Movies projected onto the first two principal components",
+                x=f"PC1 ({ratios[0]:.1%} of variance)",
+                y=f"PC2 ({ratios[1]:.1%} of variance)",
+                color="First genre",
+                )
+            + theme_minimal()
+            + theme(figure_size=(10, 6))
+            )
+    plot.save("figures/pca_movies_by_genre.png", verbose=False)
+
+
 def answer_3c(matrix: DataFrame, movies: DataFrame) -> None:
     scores, model = pca_items(center_items(matrix))
     genres: Series = genre_groups(movies, scores.index)
 
     print("3(c) first-genre groups of the plotted movies")
     print(genres.value_counts(sort=False).to_string())
+
+    plot_3c(scores, genres, model.explained_variance_ratio_)
 
 
 if __name__ == "__main__":
