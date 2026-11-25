@@ -36,7 +36,9 @@ def plot_2a(sweep: DataFrame) -> None:
             ggplot(sweep, aes(x="k", y="inertia"))
             + geom_line()
             + geom_point()
-            + scale_x_continuous(trans="log2", breaks=K_VALUES)
+            + scale_x_continuous(
+                trans="log2", breaks=K_VALUES, labels=[str(k) for k in K_VALUES]
+                )
             + labs(
                 title="k-means inertia by number of clusters",
                 x="Number of clusters k (log scale)",
